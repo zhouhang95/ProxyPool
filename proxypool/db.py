@@ -46,14 +46,14 @@ class RedisClient(object):
     
     def decrease(self, proxy):
         """
-        代理值减一分，小于最小值则删除
+        代理值减十分，小于最小值则删除
         :param proxy: 代理
         :return: 修改后的代理分数
         """
         score = self.db.zscore(REDIS_KEY, proxy)
         if score and score > MIN_SCORE:
-            print('代理', proxy, '当前分数', score, '减1')
-            return self.db.zincrby(REDIS_KEY, proxy, -1)
+            print('代理', proxy, '当前分数', score, '减5')
+            return self.db.zincrby(REDIS_KEY, proxy, -5)
         else:
             print('代理', proxy, '当前分数', score, '移除')
             return self.db.zrem(REDIS_KEY, proxy)
@@ -98,6 +98,21 @@ class RedisClient(object):
         """
         return self.db.zrevrange(REDIS_KEY, start, stop - 1)
 
+    def init(self):
+        """
+        获取全部初始化的代理
+        :return: 全部初始化的代理
+        """
+        return self.db.zrangebyscore(REDIS_KEY, INITIAL_SCORE, INITIAL_SCORE)
+    
+    def avaliable(self):
+        """
+        获取全部可用的代理
+        :return: 全部可用的代理
+        """
+        return self.db.zrangebyscore(REDIS_KEY, MAX_SCORE, MAX_SCORE)
+
+    
 
 if __name__ == '__main__':
     conn = RedisClient()

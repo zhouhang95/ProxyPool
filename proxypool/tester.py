@@ -27,7 +27,7 @@ class Tester(object):
                     proxy = proxy.decode('utf-8')
                 real_proxy = 'http://' + proxy
                 print('正在测试', proxy)
-                async with session.get(TEST_URL, proxy=real_proxy, timeout=15, allow_redirects=False) as response:
+                async with session.get(TEST_URL, proxy=real_proxy, timeout=10, allow_redirects=False) as response:
                     if response.status in VALID_STATUS_CODES:
                         self.redis.max(proxy)
                         print('代理可用', proxy)
@@ -45,17 +45,22 @@ class Tester(object):
         """
         print('测试器开始运行')
         try:
-            count = self.redis.count()
-            print('当前剩余', count, '个代理')
+            init_set = set(self.redis.init())
+            avl_set = set(self.redis.avaliable())
+            all_set = set(self.redis.all())
+            old_set = all_set - init_set - avl_set
+            all_list = list(init_set) + list(avl_set) + list(old_set)
+            count = len(all_list)
             for i in range(0, count, BATCH_TEST_SIZE):
                 start = i
                 stop = min(i + BATCH_TEST_SIZE, count)
-                print('正在测试第', start + 1, '-', stop, '个代理')
-                test_proxies = self.redis.batch(start, stop)
+                test_proxies = all_list[start: stop]
                 loop = asyncio.get_event_loop()
                 tasks = [self.test_single_proxy(proxy) for proxy in test_proxies]
+                print('-----------------------------------------')
+                print('正在测试 ({}, {}, {})'.format(start, count, BATCH_TEST_SIZE))
+                print('-----------------------------------------')
                 loop.run_until_complete(asyncio.wait(tasks))
                 sys.stdout.flush()
-                time.sleep(5)
         except Exception as e:
             print('测试器发生错误', e.args)

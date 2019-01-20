@@ -15,8 +15,11 @@ class Scheduler():
         tester = Tester()
         while True:
             print('测试器开始运行')
+            start_time = time.time()
             tester.run()
-            time.sleep(cycle)
+            diff_time = time.time() -start_time
+            if diff_time < cycle:
+                time.sleep(cycle - diff_time)
     
     def schedule_getter(self, cycle=GETTER_CYCLE):
         """
